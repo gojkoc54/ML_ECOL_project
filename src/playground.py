@@ -1,9 +1,8 @@
 import os
-PROJECT_ROOT = '/content/drive/MyDrive/ML_ECOL_project'
+PROJECT_ROOT = '/workspace/ml_ecol_project'
 os.chdir(PROJECT_ROOT)
 
-DATA_PATH = os.path.join(PROJECT_ROOT, 'data')
-DATASET_PATH = os.path.join(PROJECT_ROOT, 'dataset')
+DATASET_PATH = os.path.join(PROJECT_ROOT, '../dataset')
 CHECKPOINTS_PATH = os.path.join(PROJECT_ROOT, 'checkpoints')
 os.makedirs(CHECKPOINTS_PATH, exist_ok=True)
 
