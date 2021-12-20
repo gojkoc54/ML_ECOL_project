@@ -21,7 +21,9 @@ if __name__ == '__main__':
     LEARNING_RATE = 0.001
     MAX_ITERS = 1000
 
-    AE_PARAMS = (IN_CHANNELS, OUT_CHANNELS, HIDDEN_CHANNELS, DEPTH)
+    AE_PARAMS = (
+        IN_CHANNELS, OUT_CHANNELS, HIDDEN_CHANNELS, DEPTH, CHECKPOINTS_PATH
+        )
 
     LOADER_PARAMS = {
         'root_dir': DATASET_PATH, 'img_size': (256, 256), 'batch_size': 4

@@ -286,7 +286,7 @@ class AutoencoderCNN(nn.Module):
             data = data.to(device)
             pred = self(data)['out']
 
-            in_out_batch = torch.concat([data, pred], dim=0)
+            in_out_batch = torch.concatenate([data, pred], dim=0)
             grid_img = torchvision.utils.make_grid(
                 in_out_batch, nrow=loader.batch_size
                 )
@@ -333,6 +333,8 @@ class AutoencoderCNN(nn.Module):
             progress_plot_dir = os.path.join(
                 self.checkpoint_dir, 'plots', f'progress_epoch_{epoch}'
                 )
+            os.makedirs(progress_plot_dir, exist_ok=True)
+            
             self.plot_progress(train_loader, 5, progress_plot_dir, device)
 
         self.latest_train_losses = train_losses
