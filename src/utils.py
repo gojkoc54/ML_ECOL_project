@@ -35,14 +35,14 @@ def show_image(
     show_plot=True
     ):
 
-    MEANS = (0.485, 0.456, 0.406)
-    STDS = (0.229, 0.224, 0.225)
+    MEANS = [0.5] # (0.485, 0.456, 0.406)
+    STDS = [0.25] # (0.229, 0.224, 0.225)
     unorm = UnNormalize(MEANS, STDS)
-
+    
     img_to_show = img if not normalized else unorm(img)
-
+    
     plt.figure(figsize=figsize)    
-    plt.imshow(img_to_show.permute(1, 2, 0))
+    plt.imshow(img_to_show.permute(1, 2, 0), vmin=0, vmax=255)
     if save_path is not None:
         plt.savefig(save_path)
     if show_plot:
@@ -56,8 +56,8 @@ class ECOLDataset(Dataset):
         super(ECOLDataset, self).__init__()
 
         self.root_dir = os.path.abspath(root_dir)
-        self.MEANS = (0.485, 0.456, 0.406)
-        self.STDS = (0.229, 0.224, 0.225)
+        self.MEANS = (0.5) # (0.485, 0.456, 0.406)
+        self.STDS = (0.25) # (0.229, 0.224, 0.225)
         self.img_size = img_size
 
         # Iterate through the dataset iterator and count the elements
@@ -75,7 +75,7 @@ class ECOLDataset(Dataset):
             self.transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Resize(self.img_size),
-                transforms.Grayscale(num_output_channels=3),
+                transforms.Grayscale(num_output_channels=1),
                 transforms.Normalize(mean=self.MEANS, std=self.STDS),
                 ])
             
@@ -95,8 +95,13 @@ class ECOLDataset(Dataset):
                 break
 
         image = cv2.imread(img_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
+        if image is None:
+            print(img_path)
+            return None 
 
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
         transformed_image = self.transform(image)
 
         return transformed_image

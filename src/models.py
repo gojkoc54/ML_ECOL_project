@@ -283,14 +283,25 @@ class AutoencoderCNN(nn.Module):
         for i, data in enumerate(loader):
             if i == num_batches:
                 break 
+
             data = data.to(device)
-            pred = self(data)['out']
+            pred = self(data)['out'] 
+           
+            data = torch.sigmoid(data)
+            pred = torch.sigmoid(pred)
+            
+
+            # data -= data.min(0, keepdim=True)[0]
+            # data /= data.max(0, keepdim=True)[0]
+
+            # pred -= pred.min(0, keepdim=True)[0]
+            # pred /= pred.max(0, keepdim=True)[0]
 
             in_out_batch = torch.cat([data, pred], dim=0)
             grid_img = torchvision.utils.make_grid(
                 in_out_batch, nrow=loader.batch_size
                 )
-            
+
             os.makedirs(save_dir, exist_ok=True)
             save_path = os.path.join(save_dir, f'batch_{i}.png')
 
@@ -335,7 +346,8 @@ class AutoencoderCNN(nn.Module):
                 )
             os.makedirs(progress_plot_dir, exist_ok=True)
 
-            self.plot_progress(train_loader, 5, progress_plot_dir, device)
+            self.plot_progress(train_loader, 5, progress_plot_dir, device, normalized=False)
 
         self.latest_train_losses = train_losses
+        B
         self.latest_val_losses = val_losses

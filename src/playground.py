@@ -12,11 +12,11 @@ from models import *
 
 if __name__ == '__main__':
 
-    IN_CHANNELS = 3
-    OUT_CHANNELS = 3
+    IN_CHANNELS = 1
+    OUT_CHANNELS = 1
     HIDDEN_CHANNELS = 2
-    DEPTH = 4
-    EPOCHS = 10
+    DEPTH = 2
+    EPOCHS = 100
     LEARNING_RATE = 0.001
     MAX_ITERS = 1000
 
