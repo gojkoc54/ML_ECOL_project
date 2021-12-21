@@ -13,6 +13,16 @@ import torch.nn as nn
 import torchvision.models as models
 
 
+# TODO:
+#   - train/val split
+#   - checkpointing 
+#   - play with different architectures
+#   - enrich the dataset
+#   - balance the dataset
+#   - !!! inspect the images that are positive but the model predicts them 
+#         as negative; after X epochs when it saturates
+
+
 if __name__ == '__main__':
 
     EPOCHS = 100
@@ -20,7 +30,7 @@ if __name__ == '__main__':
     MAX_ITERS = 1000
 
     LOADER_PARAMS = {
-        'root_dir': DATASET_PATH, 'img_size': (256, 256), 'batch_size': 4
+        'root_dir': DATASET_PATH, 'img_size': (256, 256), 'batch_size': 64
         }
 
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -42,20 +52,51 @@ if __name__ == '__main__':
     # Move model to GPU
     model = model.to(DEVICE)
 
-    # dummy loop
-    for data in dataloader:
-        inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
-        labels = labels.unsqueeze(dim=1).to(torch.float32) 
+    # Define the optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+   
+    losses = []
+    accuracies = []
+    
+    total_batch_num = len(dataloader.dataset) // dataloader.batch_size
+    # Training loop
+    for epoch in range(30):
+        running_loss = 0
+        running_hits = 0
+        num_positives = 0
+        max_pred = 0
+        for i, data in enumerate(dataloader):
+            inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
+            labels = labels.unsqueeze(dim=1).to(torch.float32) 
         
-        preds = model(inputs)
+            optimizer.zero_grad()
 
-        loss = criterion(preds, labels)
+            preds = model(inputs)
 
-        print(loss)
+            loss = criterion(preds, labels)
 
-        break
+            loss.backward()
+            optimizer.step()
+            
+            running_loss += float(loss)
 
+            num_hits = (labels == (preds > 0.5)).sum()
+            running_hits += num_hits
+            
+            num_positives += (preds > 0.5).sum()
+            if preds.max() > max_pred:
+                max_pred = float(preds.max())
 
+            if i % 10 == 0:
+                print(f'Epoch {epoch}, Batch {i}/{total_batch_num}: {float(loss)}')
 
+        losses.append(running_loss / total_batch_num) 
+        accuracies.append(running_hits / len(dataloader.dataset))
+        
+        print(f'\n=== Epoch {epoch} ===')
+        print(f'Avg loss = {losses[-1]}')
+        print(f'ACC = {accuracies[-1]}')
+        print(f'positives % = {100 * num_positives / len(dataloader.dataset)}%')
+        print(f'max pred = {max_pred}\n')
 
 
