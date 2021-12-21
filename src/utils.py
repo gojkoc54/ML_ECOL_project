@@ -127,3 +127,33 @@ def load_dataset_ECOL(
     return loader
 
 
+
+def load_dataset_ECOL_labeled(
+    root_dir, 
+    img_size, 
+    batch_size, 
+    num_workers=0, 
+    shuffle=True,
+    transform=None,
+    ):
+
+    MEANS = [0.485, 0.456, 0.406]
+    STDS = [0.229, 0.224, 0.225]
+
+    if transform is None:
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize(img_size),
+            # transforms.Grayscale(num_output_channels=3),
+            transforms.Normalize(mean=MEANS, std=STDS),
+            ])
+
+    dataset = ImageFolder(root_dir, transform=transform) 
+
+    # Create DataLoader object for the dataset  
+    loader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers
+        ) 
+
+    return loader
+
