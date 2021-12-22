@@ -1,10 +1,13 @@
-from torch.utils.data.dataset import Dataset
-from torch.utils.data import DataLoader
+import torch
+import torch.nn as nn
+import torchvision.models as models
+from torch.utils.data import DataLoader, SubsetRandomSampler
 import torchvision
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 
 import os
+import numpy as np
 import matplotlib.pyplot as plt 
 import cv2 
 
@@ -25,6 +28,62 @@ class UnNormalize(object):
       t.mul_(s).add_(m)
       # The normalize code -> t.sub_(m).div_(s)
     return tensor
+
+
+
+class MetricTracker:
+    def __init__(self):
+        self.batches_cnt = 0
+        self.total_loss = 0
+        self.avg_loss = 0
+        
+        self.confusion_cnt = {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0}
+        self.confusion_arrays = {'tp': [], 'tn': [], 'fp': [], 'fn': []}
+        
+        
+    def update(self, loss, preds, labels):
+        self.batches_cnt += 1
+        
+        self.total_loss += float(loss)
+        self.avg_loss = self.total_loss / self.batches_cnt
+
+        preds_sigmoid = torch.sigmoid(preds)
+        preds_binary = preds_sigmoid > 0.5
+
+        for i in range(len(labels)):        
+            curr_key = ''
+            if preds_binary[i] == 0 and labels[i] == 0:
+                curr_key = 'tn'
+            elif preds_binary[i] == 1 and labels[i] == 1:
+                curr_key = 'tp'
+            elif preds_binary[i] == 0 and labels[i] == 1:
+                curr_key = 'fn'
+            else:
+                curr_key = 'fp'
+                
+            self.confusion_cnt[curr_key] += 1
+            self.confusion_arrays[curr_key].append(float(preds_sigmoid[i]))
+        
+        
+    def get_accuracy(self):
+        confusion_cnt_sum = np.sum([cnt for _, cnt in self.confusion_cnt.items()])
+        accuracy = self.confusion_cnt['tp'] + self.confusion_cnt['tn']
+        accuracy /= confusion_cnt_sum
+        
+        return 100 * accuracy
+    
+    def get_precision(self):
+        precision = self.confusion_cnt['tp'] / \
+            (self.confusion_cnt['tp'] + self.confusion_cnt['fp'])
+        
+        return precision
+    
+    def get_recall(self):
+        recall = self.confusion_cnt['tp'] / \
+            (self.confusion_cnt['tp'] + self.confusion_cnt['fn'])
+        
+        return recall
+
 
 
 def show_image(
@@ -50,81 +109,28 @@ def show_image(
     plt.close()
 
 
-class ECOLDataset(Dataset):
 
-    def __init__(self, root_dir, transform=None, img_size=(512, 512)):
-        super(ECOLDataset, self).__init__()
+def check_balancing(dataloader):
+    positives_cnt = 0
+    for ind in dataloader.sampler.indices:
+        positives_cnt += dataloader.dataset.samples[ind][1]
 
-        self.root_dir = os.path.abspath(root_dir)
-        self.MEANS = (0.5) # (0.485, 0.456, 0.406)
-        self.STDS = (0.25) # (0.229, 0.224, 0.225)
-        self.img_size = img_size
-
-        # Iterate through the dataset iterator and count the elements
-        dataset_iterator = os.scandir(root_dir)
-        i = -1
-        for i, _ in enumerate(dataset_iterator):
-            pass
-
-        self.len = i + 1
-
-        # Torchvision transformation to be applied to each image
-        if transform is not None:
-            self.transform = transform 
-        else:
-            self.transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Resize(self.img_size),
-                transforms.Grayscale(num_output_channels=1),
-                transforms.Normalize(mean=self.MEANS, std=self.STDS),
-                ])
-            
-
-    def __len__(self):
-        # Has to exist in order to inherit the parent class properly!
-        return self.len
-
-
-    def __getitem__(self, idx):
-
-        dataset_iterator = os.scandir(self.root_dir)
-        img_path = None
-        for i, curr_img_name in enumerate(dataset_iterator):
-            if i == idx:
-                img_path = os.path.join(self.root_dir, curr_img_name.name)
-                break
-
-        image = cv2.imread(img_path)
-        
-        if image is None:
-            print(img_path)
-            return None 
-
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
-        transformed_image = self.transform(image)
-
-        return transformed_image
+    positives_pctg = positives_cnt / len(dataloader.sampler.indices)
+    print(f'Percentage of positive samples: {100 * positives_pctg:.2f} %')
 
 
 
-def load_dataset_ECOL(
-    root_dir, 
-    img_size, 
-    batch_size, 
-    num_workers=0, 
-    shuffle=True,
-    transform=None,
-    ):
+def get_balanced_indices(dataset):
 
-    dataset = ECOLDataset(root_dir, transform, img_size) 
-
-    # Create DataLoader object for the dataset  
-    loader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers
-        ) 
-
-    return loader
+    positive_indices = [i for i in range(len(dataset.samples)) if dataset.samples[i][1] == 1]
+    negative_indices = [i for i in range(len(dataset.samples)) if dataset.samples[i][1] == 0]
+    negative_indices_balanced = np.random.choice(
+        negative_indices, len(positive_indices), replace=False
+        )
+    
+    return np.hstack([
+        np.array(positive_indices), np.array(negative_indices_balanced)
+        ])
 
 
 
@@ -134,7 +140,10 @@ def load_dataset_ECOL_labeled(
     batch_size, 
     num_workers=0, 
     shuffle=True,
+    balance=True,
     transform=None,
+    dataset_size=None,
+    test_size=0.2
     ):
 
     MEANS = [0.485, 0.456, 0.406]
@@ -149,11 +158,84 @@ def load_dataset_ECOL_labeled(
             ])
 
     dataset = ImageFolder(root_dir, transform=transform) 
+    
+    if dataset_size is None:
+        dataset_size = len(dataset)
+        
+    if balance:
+        dataset_indices = get_balanced_indices(dataset)
+        
+        if len(dataset_indices) < dataset_size:
+            dataset_size = len(dataset_indices)
+    else:
+        dataset_indices = list(range(len(dataset)))
+    
+    
+    if shuffle:
+        dataset_indices = np.random.choice(
+            dataset_indices, dataset_size, replace=False
+            )
+    else:
+        dataset_indices = dataset_indices[ : dataset_size]
+    
+    val_split_index = int(np.floor(test_size * dataset_size))
 
-    # Create DataLoader object for the dataset  
-    loader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers
-        ) 
+    train_indices, val_indices = \
+        dataset_indices[val_split_index:], dataset_indices[:val_split_index]
 
-    return loader
+    train_sampler = SubsetRandomSampler(train_indices)
+    val_sampler = SubsetRandomSampler(val_indices)
+
+    train_loader = DataLoader(
+        dataset=dataset, shuffle=False, batch_size=batch_size, sampler=train_sampler
+        )
+    val_loader = DataLoader(
+        dataset=dataset, shuffle=False, batch_size=batch_size, sampler=val_sampler
+        )
+
+    return train_loader, val_loader
+
+
+
+def show_batch_as_grid(input_batch, save_path=None):
+    MEANS = [0.485, 0.456, 0.406]
+    STDS = [0.229, 0.224, 0.225]
+    unorm = UnNormalize(MEANS, STDS)
+
+    grid_img = torchvision.utils.make_grid(
+        unorm(input_batch).cpu()
+        )
+
+    plt.figure(figsize=(6 * input_batch.shape[0], 10))
+    plt.imshow(grid_img.permute(1, 2, 0))
+    if save_path is not None:
+        plt.savefig(save_path)
+    plt.close()
+
+    
+def visualize_false_negatives(inputs, labels, preds, save_path=None):
+    preds_binary = preds > 0.5
+    is_false_negative = ((preds_binary == 0) * (labels == 1)).to(torch.bool).squeeze()
+    
+    if is_false_negative.sum() == 0:
+        return 
+
+    false_negatives = inputs[is_false_negative] 
+    
+    show_batch_as_grid(false_negatives, save_path)
+
+
+def visualize_true_positives(inputs, labels, preds, save_path=None):
+    preds_binary = preds > 0.5
+    is_true_positive = (
+        (preds_binary == 1) * (labels == 1)
+        ).to(torch.bool).squeeze()
+
+    if is_true_positive.sum() == 0:
+        return
+
+    true_positives = inputs[is_true_positive]
+
+    show_batch_as_grid(true_positives, save_path)
+
 
