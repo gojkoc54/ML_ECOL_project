@@ -1,6 +1,0 @@
-matplotlib
-opencv-python
-rawpy
-imageio	
-
-
