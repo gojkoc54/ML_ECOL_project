@@ -7,6 +7,11 @@ from utils import *
 
 def initialize_model(model_name, num_classes=1, pretrained=True):
     
+    if model_name == 'alexnet':
+        model = models.alexnet(pretrained=pretrained)
+        num_features = model.classifier[6].in_features
+        model.classifier[6] = nn.Linear(num_features,num_classes)
+
     if model_name == 'vgg16':
         model = models.vgg16(pretrained=pretrained)
         num_features = model.classifier[6].in_features
@@ -24,7 +29,7 @@ def initialize_model(model_name, num_classes=1, pretrained=True):
 
     else:
         print(f'No model found for model_name: {model_name} !!!')        
-        print('Available models are: vgg16, resnet18, densenet121')
+        print('Available models are: alexnet, vgg16, resnet18, densenet121')
         exit()
 
     return model

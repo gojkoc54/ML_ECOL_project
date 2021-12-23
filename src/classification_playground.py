@@ -30,12 +30,15 @@ args = parser.parse_args()
 
 # TODO:
 #   - checkpointing 
-#   - play with different architectures
 #   - early stopping 
 #   - logging and pickle-ing
 
 #   - !!! inspect the images that are positive but the model predicts them 
-#         as negative; after X epochs when it saturates
+#         as negative; use the whole balanced dataset
+#   - implement a dataset that works same as ImageFolder, BUT also returns
+#         the path of the images ==>> save them when it's misclassified 
+
+#   - test on unbalanced dataset BUT without the samples from training
 
 
 
