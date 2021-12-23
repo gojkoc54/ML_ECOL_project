@@ -125,7 +125,8 @@ def evaluate(model, dataloader, criterion, device, title=None, save_paths=False)
         loss = criterion(preds, labels)
         
         # Update the metrics
-        metric_tracker.update(float(loss), preds, labels)
+        paths_to_save = img_paths if save_paths else None 
+        metric_tracker.update(float(loss), preds, labels, paths_to_save)
         
         if i % 10 == 0:
             msg = f'{title.capitalize()} - Batch '
