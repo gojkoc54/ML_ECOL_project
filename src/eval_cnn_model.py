@@ -1,4 +1,9 @@
-from PIL.Image import init
+import warnings
+warnings.filterwarnings("ignore")
+import logging
+logger = logging.getLogger()
+logger.setLevel(100)
+
 import torch.nn as nn
 import os
 from utils import *
