@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     # Define the destination device for training
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(DEVICE)
+    print(f'\nDevice being used: {DEVICE}\n')
     
     # Define the loss function
     criterion = nn.BCEWithLogitsLoss()
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     # Replace the classification layer with the new one !!!
     # The new output layer will have a prediction for only 1 class.
     model = initialize_model(args.model, pretrained=args.pretrained)
-    print(f'Loaded pre-trained model {type(model).__name__}')
+    print(f'Loaded pre-trained model {type(model).__name__}\n')
 
     # If the model was properly loaded, create the checkpoint directory
     CHECKPOINTS_PATH = os.path.join(args.root, args.cp_path, args.model)
