@@ -138,9 +138,10 @@ def evaluate(model, dataloader, criterion, device):
 
 def fit(model, loaders, optimizer, criterion, device, paths_dict, epochs=10):
     
-    checkpoint_path, plot_path = paths_dict['cp_path'], paths_dict['plot_path']
+    checkpoints_path, plots_path = \
+        paths_dict['cps_path'], paths_dict['plots_path']
     checkpoint_save_path = os.path.join(
-        checkpoint_path, 
+        checkpoints_path, 
         f'{type(model).__name__.lower()}_checkpoint.pt'
         )
 
@@ -179,7 +180,7 @@ def fit(model, loaders, optimizer, criterion, device, paths_dict, epochs=10):
 
     # Save the metrics
     metrics_save_path = os.path.join(
-        checkpoint_path, 
+        checkpoints_path, 
         f'{type(model).__name__.lower()}_metrics_per_epoch.pt'
         )    
     torch.save(metrics_per_epoch, metrics_save_path)

@@ -87,5 +87,8 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
    
     # Start training  
-    model = fit(model, loaders, optimizer, criterion, DEVICE)
+    paths_dict = {'cps_path': CHECKPOINTS_PATH, 'plots_path': PLOTS_PATH}
+    model = fit(
+        model, loaders, optimizer, criterion, DEVICE, paths_dict, args.epochs
+        )
 
