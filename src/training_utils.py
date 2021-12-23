@@ -12,7 +12,7 @@ def initialize_model(model_name, num_classes=1, pretrained=True):
         num_features = model.classifier[6].in_features
         model.classifier[6] = nn.Linear(num_features,num_classes)
 
-    if model_name == 'vgg16':
+    elif model_name == 'vgg16':
         model = models.vgg16(pretrained=pretrained)
         num_features = model.classifier[6].in_features
         model.classifier[6] = nn.Linear(num_features, num_classes)
@@ -33,6 +33,19 @@ def initialize_model(model_name, num_classes=1, pretrained=True):
         exit()
 
     return model
+
+
+
+def save_checkpoint(model, save_path, val_loss=-1, epoch=-1):
+    torch.save({
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'val_loss': val_loss
+        },
+        save_path
+        )
+
+    print(f'\nCheckpoint saved to {save_path}\n')
 
 
 def train_epoch(model, dataloader, optimizer, criterion, device, epoch_idx=0):
@@ -123,10 +136,17 @@ def evaluate(model, dataloader, criterion, device):
 
 
 
-def fit(model, loaders, optimizer, criterion, device, epochs=10):
+def fit(model, loaders, optimizer, criterion, device, paths_dict, epochs=10):
     
+    checkpoint_path, plot_path = paths_dict['cp_path'], paths_dict['plot_path']
+    checkpoint_save_path = os.path.join(
+        checkpoint_path, 
+        f'{type(model).__name__.lower()}_checkpoint.pt'
+        )
+
     train_loader, val_loader = loaders
     metrics_per_epoch = {}
+    best_val_loss, worse_cnt, have_stopped = np.inf, 0, False
 
     for epoch in range(epochs):
 
@@ -139,5 +159,29 @@ def fit(model, loaders, optimizer, criterion, device, epochs=10):
         
         val_metrics = evaluate(model, val_loader, criterion, device)
         metrics_per_epoch[epoch]['val'] = val_metrics
+
+        # Update best loss and save the checkpoint
+        if have_stopped:
+            continue 
+        if val_metrics.avg_loss < best_val_loss:
+            best_val_loss = val_metrics.avg_loss
+        elif worse_cnt == 0:
+            worse_cnt += 1
+        else:
+            print('\nEarly stopping!\n')
+            have_stopped = True 
+            save_checkpoint(
+                model, checkpoint_save_path, val_metrics.avg_loss, epoch
+                )
+
+    if not have_stopped:
+        save_checkpoint(model, checkpoint_save_path, best_val_loss, epoch)
+
+    # Save the metrics
+    metrics_save_path = os.path.join(
+        checkpoint_path, 
+        f'{type(model).__name__.lower()}_metrics_per_epoch.pt'
+        )    
+    torch.save(metrics_per_epoch, metrics_save_path)
 
     return model

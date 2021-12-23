@@ -23,15 +23,17 @@ parser.add_argument('--pretrained', default=1, type=int)
 parser.add_argument('--root', default='/workspace/ml_ecol_project', type=str)
 parser.add_argument('--data-dir', default='../labeled_data', type=str)
 parser.add_argument('--cp-path', default='checkpoints', type=str)
-parser.add_argument('--plots-path', default='checkpoints/plots', type=str)
+parser.add_argument('--plots-path', default='plots', type=str)
 
 args = parser.parse_args()
 
 
 # TODO:
 #   - checkpointing 
-#   - early stopping 
+#   - early stopping - save the model but continue learning
 #   - logging and pickle-ing
+
+#   - show histograms and learning curves
 
 #   - !!! inspect the images that are positive but the model predicts them 
 #         as negative; use the whole balanced dataset
@@ -40,6 +42,8 @@ args = parser.parse_args()
 
 #   - test on unbalanced dataset BUT without the samples from training
 
+# - ! add conda yaml file and check if it works
+
 
 
 if __name__ == '__main__':
@@ -47,9 +51,6 @@ if __name__ == '__main__':
     # Define the paths
     os.chdir(args.root)
     DATASET_PATH = os.path.join(args.root, args.data_dir)
-    CHECKPOINTS_PATH = os.path.join(args.root, args.cp_path)
-    PLOTS_PATH = os.path.join(args.root, args.plots_path)
-    os.makedirs(PLOTS_PATH, exist_ok=True)
 
     # Hyperparameters for the DataLoader
     LOADER_PARAMS = {
@@ -73,6 +74,11 @@ if __name__ == '__main__':
     # The new output layer will have a prediction for only 1 class.
     model = initialize_model(args.model, pretrained=args.pretrained)
     print(f'Loaded pre-trained model {type(model).__name__}')
+
+    # If the model was properly loaded, create the checkpoint directory
+    CHECKPOINTS_PATH = os.path.join(args.root, args.cp_path, args.model)
+    PLOTS_PATH = os.path.join(CHECKPOINTS_PATH, args.plots_path)
+    os.makedirs(PLOTS_PATH, exist_ok=True)
 
     # Move model to GPU
     model = model.to(DEVICE)
