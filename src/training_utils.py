@@ -149,6 +149,13 @@ def fit(model, loaders, optimizer, criterion, device, paths_dict, epochs=10):
     metrics_per_epoch = {}
     best_val_loss, worse_cnt, have_stopped = np.inf, 0, False
 
+    # Let's first evaluate the model just with the pre-trained parameters
+    metrics_per_epoch[-1] = {}
+    metrics_per_epoch[-1]['val'] = evaluate(
+        model, val_loader, criterion, device
+        )
+
+    # Training loop (over epochs)
     for epoch in range(epochs):
 
         metrics_per_epoch[epoch] = {}
@@ -184,5 +191,6 @@ def fit(model, loaders, optimizer, criterion, device, paths_dict, epochs=10):
         f'{type(model).__name__.lower()}_metrics_per_epoch.pt'
         )    
     torch.save(metrics_per_epoch, metrics_save_path)
+    print(f'\nMetrics saved to {metrics_save_path}\n')
 
     return model
