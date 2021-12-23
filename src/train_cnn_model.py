@@ -32,12 +32,7 @@ args = parser.parse_args()
 # TODO:
 
 #   - !!! inspect the images that are positive but the model predicts them 
-#         as negative; use the whole balanced dataset
-#   - implement a dataset that works same as ImageFolder, BUT also returns
-#         the path of the images ==>> save them when it's misclassified 
-
-#   - train / val / TEST split 
-#   - test on unbalanced dataset BUT without the samples from training
+#         as negative; use the whole balanced dataset +++ memorize the paths
 
 #   - ! add conda yaml file and check if it works
 
@@ -58,7 +53,7 @@ if __name__ == '__main__':
 
     TEST_LOADER_PARAMS = {
         'root_dir': TEST_DATA_PATH, 'img_size': args.img_size, 
-        'batch_size': args.bs, 'test_size': 0, 'balance': True
+        'batch_size': args.bs, 'test_size': 0, 'balance': False
         }
 
     # Define the destination device for training

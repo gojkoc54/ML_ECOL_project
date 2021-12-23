@@ -123,7 +123,9 @@ def evaluate(model, dataloader, criterion, device, title='VALIDATION'):
         metric_tracker.update(float(loss), preds, labels)
         
         if i % 10 == 0:
-            print(f'Validation - Batch {i}/{total_batch_num}: {float(loss)}')
+            msg = f'{title.capitalize()} - Batch '
+            msg += f'{i}/{total_batch_num}: {float(loss)}'
+            print(msg)
     
     print(f'\n=== {title} ===')
     print(f'Avg loss = {metric_tracker.avg_loss}')
