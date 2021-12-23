@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torchvision.models as models
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -9,16 +8,17 @@ logger.setLevel(100)
 import os
 
 from utils import *
+from training_utils import *
 
 import argparse
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--epochs', default=10, type=int)
 parser.add_argument('--lr', default=1e-4, type=float)
-parser.add_argument('--epochs', default=10, type=int)
 parser.add_argument('--bs', '--batch-size', default=32, type=int)
 parser.add_argument('--img-size', default=(256, 256), type=tuple)
 parser.add_argument('--model', default='vgg16', type=str)
+parser.add_argument('--pretrained', default=1, type=int)
 
 parser.add_argument('--root', default='/workspace/ml_ecol_project', type=str)
 parser.add_argument('--data-dir', default='../labeled_data', type=str)
@@ -31,8 +31,12 @@ args = parser.parse_args()
 # TODO:
 #   - checkpointing 
 #   - play with different architectures
+#   - early stopping 
+#   - logging and pickle-ing
+
 #   - !!! inspect the images that are positive but the model predicts them 
 #         as negative; after X epochs when it saturates
+
 
 
 if __name__ == '__main__':
@@ -62,14 +66,10 @@ if __name__ == '__main__':
     loaders = [train_loader, val_loader]
 
     # Load the pretrained model
-    model = None
-    if args.model == 'vgg16':
-        model = models.vgg16(pretrained=True)
-    
-        # Replace the classification layer with the new one
-        # Will output the prediction for only 1 class
-        model.classifier[6] = nn.Linear(4096, 1)
-     
+    # Replace the classification layer with the new one !!!
+    # The new output layer will have a prediction for only 1 class.
+    model = initialize_model(args.model, pretrained=args.pretrained)
+    print(f'Loaded pre-trained model {type(model).__name__}')
 
     # Move model to GPU
     model = model.to(DEVICE)
@@ -78,5 +78,5 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
    
     # Start training  
-    model = model.fit(model, loaders, optimizer, criterion, DEVICE)
+    model = fit(model, loaders, optimizer, criterion, DEVICE)
 

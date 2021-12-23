@@ -187,10 +187,17 @@ def load_dataset_ECOL_labeled(
     val_sampler = SubsetRandomSampler(val_indices)
 
     train_loader = DataLoader(
-        dataset=dataset, shuffle=False, batch_size=batch_size, sampler=train_sampler
+        dataset=dataset, 
+        shuffle=False, 
+        batch_size=batch_size, 
+        sampler=train_sampler
         )
+    
     val_loader = DataLoader(
-        dataset=dataset, shuffle=False, batch_size=batch_size, sampler=val_sampler
+        dataset=dataset, 
+        shuffle=False, 
+        batch_size=batch_size, 
+        sampler=val_sampler
         )
 
     return train_loader, val_loader

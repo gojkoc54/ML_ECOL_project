@@ -1,7 +1,33 @@
 import torch
 import torch.nn as nn
+import torchvision.models as models
 
 from utils import *
+
+
+def initialize_model(model_name, num_classes=1, pretrained=True):
+    
+    if model_name == 'vgg16':
+        model = models.vgg16(pretrained=pretrained)
+        num_features = model.classifier[6].in_features
+        model.classifier[6] = nn.Linear(num_features, num_classes)
+
+    elif model_name == 'resnet18':
+        model = models.resnet18(pretrained=pretrained)
+        num_features = model.fc.in_features
+        model.fc = nn.Linear(num_features, num_classes)
+    
+    elif model_name == 'densenet121':
+        model = models.densenet121(pretrained=pretrained)
+        num_features = model.classifier.in_features
+        model.classifier = nn.Linear(num_features, num_classes)
+
+    else:
+        print(f'No model found for model_name: {model_name} !!!')        
+        print('Available models are: vgg16, resnet18, densenet121')
+        exit()
+
+    return model
 
 
 def train_epoch(model, dataloader, optimizer, criterion, device, epoch_idx=0):
