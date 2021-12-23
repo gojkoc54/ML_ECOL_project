@@ -96,7 +96,7 @@ def train_epoch(model, dataloader, optimizer, criterion, device, epoch_idx=0):
     return metric_tracker
 
 
-def evaluate(model, dataloader, criterion, device):
+def evaluate(model, dataloader, criterion, device, title='VALIDATION'):
     
     # Put the model in eval mode
     model.eval()
@@ -125,7 +125,7 @@ def evaluate(model, dataloader, criterion, device):
         if i % 10 == 0:
             print(f'Validation - Batch {i}/{total_batch_num}: {float(loss)}')
     
-    print(f'\n=== VALIDATION ===')
+    print(f'\n=== {title} ===')
     print(f'Avg loss = {metric_tracker.avg_loss}')
     print(f'Accuracy = {metric_tracker.get_accuracy()}')
     print(f'Precision = {metric_tracker.get_precision()}')
@@ -145,7 +145,7 @@ def fit(model, loaders, optimizer, criterion, device, paths_dict, epochs=10):
         f'{type(model).__name__.lower()}_checkpoint.pt'
         )
 
-    train_loader, val_loader = loaders
+    train_loader, val_loader, test_loader = loaders
     metrics_per_epoch = {}
     best_val_loss, worse_cnt, have_stopped = np.inf, 0, False
 
@@ -184,6 +184,15 @@ def fit(model, loaders, optimizer, criterion, device, paths_dict, epochs=10):
 
     if not have_stopped:
         save_checkpoint(model, checkpoint_save_path, best_val_loss, epoch)
+
+
+    # Testing on the test set
+    # But first, load the model that was saved as the best one
+    model.load_state_dict(
+        torch.load(checkpoint_save_path)['model_state_dict']
+        )
+    test_metrics = evaluate(model, test_loader, criterion, device, 'TESTING')
+    metrics_per_epoch['test'] = test_metrics
 
     # Save the metrics
     metrics_save_path = os.path.join(

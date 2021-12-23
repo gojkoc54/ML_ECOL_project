@@ -21,7 +21,8 @@ parser.add_argument('--model', default='vgg16', type=str)
 parser.add_argument('--pretrained', default=1, type=int)
 
 parser.add_argument('--root', default='/workspace/ml_ecol_project', type=str)
-parser.add_argument('--data-dir', default='../labeled_data', type=str)
+parser.add_argument('--train-dir', default='../labeled_data', type=str)
+parser.add_argument('--test-dir', default='../labeled_data_test', type=str)
 parser.add_argument('--cp-path', default='checkpoints', type=str)
 parser.add_argument('--plots-path', default='plots', type=str)
 
@@ -46,12 +47,18 @@ if __name__ == '__main__':
 
     # Define the paths
     os.chdir(args.root)
-    DATASET_PATH = os.path.join(args.root, args.data_dir)
+    TRAIN_DATA_PATH = os.path.join(args.root, args.train_dir)
+    TEST_DATA_PATH = os.path.join(args.root, args.test_dir)
 
     # Hyperparameters for the DataLoader
-    LOADER_PARAMS = {
-        'root_dir': DATASET_PATH, 'img_size': args.img_size, 
+    TRAIN_LOADER_PARAMS = {
+        'root_dir': TRAIN_DATA_PATH, 'img_size': args.img_size, 
         'batch_size': args.bs, 'test_size': 0.2, 'balance': True
+        }
+
+    TEST_LOADER_PARAMS = {
+        'root_dir': TEST_DATA_PATH, 'img_size': args.img_size, 
+        'batch_size': args.bs, 'test_size': 0, 'balance': True
         }
 
     # Define the destination device for training
@@ -61,9 +68,11 @@ if __name__ == '__main__':
     # Define the loss function
     criterion = nn.BCEWithLogitsLoss()
 
-    # Loading the Data Loader
-    train_loader, val_loader = load_dataset_ECOL_labeled(**LOADER_PARAMS)
-    loaders = [train_loader, val_loader]
+    # Loading the Data Loaders
+    train_loader, val_loader = load_dataset_ECOL_labeled(**TRAIN_LOADER_PARAMS)
+    test_loader, _ = load_dataset_ECOL_labeled(**TEST_LOADER_PARAMS)
+
+    loaders = [train_loader, val_loader, test_loader]
 
     # Load the pretrained model
     # Replace the classification layer with the new one !!!
