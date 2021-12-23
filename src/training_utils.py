@@ -96,8 +96,12 @@ def train_epoch(model, dataloader, optimizer, criterion, device, epoch_idx=0):
     return metric_tracker
 
 
-def evaluate(model, dataloader, criterion, device, title='VALIDATION'):
+
+def evaluate(model, dataloader, criterion, device, title=None, save_paths=False):
     
+    if title is None:
+        title = 'VALIDATION'
+
     # Put the model in eval mode
     model.eval()
     
@@ -111,7 +115,8 @@ def evaluate(model, dataloader, criterion, device, title='VALIDATION'):
         total_batch_num = len(dataloader.dataset) // dataloader.batch_size
     
     for i, data in enumerate(dataloader):
-        inputs, labels = data[0].to(device), data[1].to(device)
+        inputs, labels, img_paths = \
+            data[0].to(device), data[1].to(device), data[2]
         labels = labels.unsqueeze(dim=1).to(torch.float32) 
         
         # Forward pass

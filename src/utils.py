@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import cv2 
 
 
+
 class UnNormalize(object):
   def __init__(self, mean, std):
     self.mean = mean
@@ -33,6 +34,7 @@ class UnNormalize(object):
 
 
 class MetricTracker:
+
     def __init__(self):
         self.batches_cnt = 0
         self.total_loss = 0
@@ -40,9 +42,9 @@ class MetricTracker:
         
         self.confusion_cnt = {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0}
         self.confusion_arrays = {'tp': [], 'tn': [], 'fp': [], 'fn': []}
+        self.confusion_paths = {'tp': [], 'tn': [], 'fp': [], 'fn': []}
         
-        
-    def update(self, loss, preds, labels):
+    def update(self, loss, preds, labels, paths=None):
         self.batches_cnt += 1
         
         self.total_loss += float(loss)
@@ -64,6 +66,9 @@ class MetricTracker:
                 
             self.confusion_cnt[curr_key] += 1
             self.confusion_arrays[curr_key].append(float(preds_sigmoid[i]))
+            if paths is not None:
+                self.confusion_paths[curr_key].append(paths[i])
+                
         
         
     def get_accuracy(self):
@@ -87,30 +92,6 @@ class MetricTracker:
 
 
 
-def show_image(
-    img, 
-    figsize=(9, 6), 
-    normalized=False, 
-    save_path=None, 
-    show_plot=True
-    ):
-
-    MEANS = [0.5] # (0.485, 0.456, 0.406)
-    STDS = [0.25] # (0.229, 0.224, 0.225)
-    unorm = UnNormalize(MEANS, STDS)
-    
-    img_to_show = img if not normalized else unorm(img)
-    
-    plt.figure(figsize=figsize)    
-    plt.imshow(img_to_show.permute(1, 2, 0), vmin=0, vmax=255)
-    if save_path is not None:
-        plt.savefig(save_path)
-    if show_plot:
-        plt.show()
-    plt.close()
-
-
-
 def check_balancing(dataloader):
     positives_cnt = 0
     for ind in dataloader.sampler.indices:
@@ -123,8 +104,12 @@ def check_balancing(dataloader):
 
 def get_balanced_indices(dataset):
 
-    positive_indices = [i for i in range(len(dataset.samples)) if dataset.samples[i][1] == 1]
-    negative_indices = [i for i in range(len(dataset.samples)) if dataset.samples[i][1] == 0]
+    positive_indices = [
+        i for i in range(len(dataset.samples)) if dataset.samples[i][1] == 1
+        ]
+    negative_indices = [
+        i for i in range(len(dataset.samples)) if dataset.samples[i][1] == 0
+        ]
     negative_indices_balanced = np.random.choice(
         negative_indices, len(positive_indices), replace=False
         )
@@ -251,48 +236,5 @@ def load_dataset_ECOL_labeled(
         )
 
     return train_loader, val_loader
-
-
-
-def show_batch_as_grid(input_batch, save_path=None):
-    MEANS = [0.485, 0.456, 0.406]
-    STDS = [0.229, 0.224, 0.225]
-    unorm = UnNormalize(MEANS, STDS)
-
-    grid_img = torchvision.utils.make_grid(
-        unorm(input_batch).cpu()
-        )
-
-    plt.figure(figsize=(6 * input_batch.shape[0], 10))
-    plt.imshow(grid_img.permute(1, 2, 0))
-    if save_path is not None:
-        plt.savefig(save_path)
-    plt.close()
-
-    
-def visualize_false_negatives(inputs, labels, preds, save_path=None):
-    preds_binary = preds > 0.5
-    is_false_negative = ((preds_binary == 0) * (labels == 1)).to(torch.bool).squeeze()
-    
-    if is_false_negative.sum() == 0:
-        return 
-
-    false_negatives = inputs[is_false_negative] 
-    
-    show_batch_as_grid(false_negatives, save_path)
-
-
-def visualize_true_positives(inputs, labels, preds, save_path=None):
-    preds_binary = preds > 0.5
-    is_true_positive = (
-        (preds_binary == 1) * (labels == 1)
-        ).to(torch.bool).squeeze()
-
-    if is_true_positive.sum() == 0:
-        return
-
-    true_positives = inputs[is_true_positive]
-
-    show_batch_as_grid(true_positives, save_path)
 
 

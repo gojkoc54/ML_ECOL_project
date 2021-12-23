@@ -30,10 +30,6 @@ args = parser.parse_args()
 
 
 # TODO:
-
-#   - !!! inspect the images that are positive but the model predicts them 
-#         as negative; use the whole balanced dataset +++ memorize the paths
-
 #   - ! add conda yaml file and check if it works
 
 
