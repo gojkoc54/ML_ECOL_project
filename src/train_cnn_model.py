@@ -29,10 +29,6 @@ parser.add_argument('--plots-path', default='plots', type=str)
 args = parser.parse_args()
 
 
-# TODO:
-#   - ! add conda yaml file and check if it works
-
-
 
 if __name__ == '__main__':
 
