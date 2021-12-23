@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 from torch.utils.data import DataLoader, SubsetRandomSampler
+from torch.utils.data.dataset import Dataset
 import torchvision
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
@@ -9,8 +10,7 @@ from torchvision.datasets import ImageFolder
 import os
 import numpy as np
 import matplotlib.pyplot as plt 
-import cv2 
-
+from PIL import Image 
 
 class UnNormalize(object):
   def __init__(self, mean, std):
@@ -134,6 +134,53 @@ def get_balanced_indices(dataset):
 
 
 
+class ECOLDataset(Dataset):
+    
+    def __init__(self, root_dir, transform=None):
+        super(ECOLDataset, self).__init__()
+
+        self.root_dir = os.path.abspath(root_dir)
+        self.subdirs = os.listdir(self.root_dir)
+        self.subdirs.sort()
+
+        self.dir_label_map = {}
+        for i, subdir in enumerate(self.subdirs):
+            self.dir_label_map[subdir] = i
+
+        # Iterate through the subdirs and collect (path_to_img, label) pairs
+        self.paths_and_labels = []
+        for subdir in self.subdirs:
+            subdir_path = os.listdir(os.path.join(self.root_dir, subdir))
+            for img_name in subdir_path:
+                img_path = os.path.join(subdir_path, img_name)
+                self.paths_and_labels.append((img_path, self.dir_label_map[subdir]))
+        
+        self.len = len(self.paths_and_labels)
+
+        if transform is not None:
+            self.transform = transform
+        else:
+            self.transform = transforms.Compose([ 
+                transforms.ToTensor()
+                ])
+
+    
+    def __len__(self):
+        return self.len 
+
+    
+    def __getitem__(self, idx):
+
+        img_path, label = self.paths_and_labels[idx]
+
+        with open(img_path, 'rb') as img_file:
+            img = Image.open(img_file)
+        img = img.convert('RGB')
+
+        return img, label, img_path
+
+
+
 def load_dataset_ECOL_labeled(
     root_dir, 
     img_size, 
@@ -157,7 +204,8 @@ def load_dataset_ECOL_labeled(
             transforms.Normalize(mean=MEANS, std=STDS),
             ])
 
-    dataset = ImageFolder(root_dir, transform=transform) 
+    # dataset = ImageFolder(root_dir, transform=transform) 
+    dataset = ECOLDataset(root_dir, transform=transform)
     
     if dataset_size is None:
         dataset_size = len(dataset)

@@ -29,20 +29,16 @@ args = parser.parse_args()
 
 
 # TODO:
-#   - checkpointing 
-#   - early stopping - save the model but continue learning
-#   - logging and pickle-ing
-
-#   - show histograms and learning curves
 
 #   - !!! inspect the images that are positive but the model predicts them 
 #         as negative; use the whole balanced dataset
 #   - implement a dataset that works same as ImageFolder, BUT also returns
 #         the path of the images ==>> save them when it's misclassified 
 
+#   - train / val / TEST split 
 #   - test on unbalanced dataset BUT without the samples from training
 
-# - ! add conda yaml file and check if it works
+#   - ! add conda yaml file and check if it works
 
 
 
