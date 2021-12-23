@@ -10,7 +10,8 @@ from torchvision.datasets import ImageFolder
 import os
 import numpy as np
 import matplotlib.pyplot as plt 
-from PIL import Image 
+import cv2 
+
 
 class UnNormalize(object):
   def __init__(self, mean, std):
@@ -148,14 +149,15 @@ class ECOLDataset(Dataset):
             self.dir_label_map[subdir] = i
 
         # Iterate through the subdirs and collect (path_to_img, label) pairs
-        self.paths_and_labels = []
+        self.samples = []
         for subdir in self.subdirs:
-            subdir_path = os.listdir(os.path.join(self.root_dir, subdir))
-            for img_name in subdir_path:
+            subdir_path = os.path.join(self.root_dir, subdir)
+
+            for img_name in os.listdir(subdir_path):
                 img_path = os.path.join(subdir_path, img_name)
-                self.paths_and_labels.append((img_path, self.dir_label_map[subdir]))
+                self.samples.append((img_path, self.dir_label_map[subdir]))
         
-        self.len = len(self.paths_and_labels)
+        self.len = len(self.samples)
 
         if transform is not None:
             self.transform = transform
@@ -171,13 +173,13 @@ class ECOLDataset(Dataset):
     
     def __getitem__(self, idx):
 
-        img_path, label = self.paths_and_labels[idx]
+        img_path, label = self.samples[idx]
 
-        with open(img_path, 'rb') as img_file:
-            img = Image.open(img_file)
-        img = img.convert('RGB')
+        image = cv2.imread(img_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = self.transform(image)
 
-        return img, label, img_path
+        return image, label, img_path
 
 
 
